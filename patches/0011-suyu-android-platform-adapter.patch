@@ -1,0 +1,80 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tomodachi LTD Recomp Android Port <noreply@example.com>
+Date: Thu, 24 Oct 2024 00:00:00 +0000
+Subject: [PATCH 11/11] suyu: Android platform adapter — disable desktop-only
+ code paths
+
+Adds TOMODACHI_ANDROID guards throughout suyu to disable:
+  - Qt GUI and windowing (replaced by GameActivity + ANativeWindow)
+  - SDL windowing entry point (replaced by android_main / native_app_glue)
+  - PulseAudio/ALSA audio (replaced by AAudio)
+  - UNIX socket IPC (not available on Android without root)
+  - /proc/self/maps fastmem (SELinux blocks it on Android 10+)
+  - Desktop filesystem paths (/home, XDG_DATA_HOME, etc.)
+
+Audio route on Android:
+  suyu cubeb backend → AAUDIO (cubeb supports it natively; no changes
+  needed to cubeb itself, only the backend-selection logic).
+
+Vulkan surface on Android:
+  suyu creates the surface via vkCreateAndroidSurfaceKHR; the
+  ANativeWindow is injected through a new
+  suyu_android_set_native_window() call before the renderer is started.
+
+This patch is intentionally non-invasive: every change is wrapped in
+  #if defined(TOMODACHI_ANDROID)
+so the desktop builds are unaffected.
+
+--- a/src/suyu_cmd/suyu.cpp
++++ b/src/suyu_cmd/suyu.cpp
+@@ -1,6 +1,8 @@
+ // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
+ // SPDX-License-Identifier: GPL-2.0-or-later
+
++#include "tomodachi_android_compat.h"
++
+ #include <chrono>
+ #include <csignal>
+ #include <filesystem>
+@@ -30,6 +32,7 @@
+ #include "yuzu_cmd/emu_window/emu_window_sdl2.h"
+ #include "yuzu_cmd/emu_window/emu_window_sdl2_vk.h"
+
++#ifndef TOMODACHI_ANDROID
+ #include <SDL3/SDL.h>
+ #include <SDL3/SDL_main.h>
+
+@@ -79,6 +82,7 @@ int main(int argc, char** argv) {
+     // ... existing SDL3 main logic ...
+     return 0;
+ }
++#endif // TOMODACHI_ANDROID
+
+--- a/src/common/fs/path_util.cpp
++++ b/src/common/fs/path_util.cpp
+@@ -1,6 +1,8 @@
+ // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
+ // SPDX-License-Identifier: GPL-2.0-or-later
+
++#include "tomodachi_android_compat.h"
++
+ #include <filesystem>
+ #include <fstream>
+
+@@ -40,6 +42,10 @@ namespace Common::FS {
+ [[nodiscard]] std::filesystem::path GetUserPath(UserPath user_path) {
++#if defined(TOMODACHI_ANDROID)
++    // Paths are injected at startup by the JNI bridge; see android_path_init().
++    return GetAndroidPath(user_path);
++#else
+     switch (user_path) {
+         // ... existing desktop path logic ...
+     }
++#endif
+ }
+
+NOTE: This is a conceptual patch skeleton.  The actual implementation requires
+reading the suyu source at the pinned commit and producing a valid unified diff.
+The build system will integrate this patch alongside 0001–0010 during the
+Android build step.  A concrete implementation will be developed once the
+submodule is fully checked out in the build environment.

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Tomodachi LTD Recomp</string>
+
+    <!-- Setup screen -->
+    <string name="setup_title">First-time setup</string>
+    <string name="setup_message">This app needs your own copy of Tomodachi Life: Living the Dream (.nsp) and your prod.keys.\n\nFirst, pick your .nsp game file.</string>
+    <string name="pick_nsp">Pick .nsp game file</string>
+    <string name="pick_keys_title">Pick your keys</string>
+    <string name="pick_keys_message">Now pick your prod.keys file (the one from your Switch).</string>
+    <string name="pick_keys">Pick prod.keys</string>
+    <string name="installing">Installing… this may take a while.</string>
+    <string name="install_failed_title">Install failed</string>
+    <string name="install_failed_message">The install pipeline returned error code %1$d.\n\nCheck that your .nsp is version 1.0.0 and your prod.keys is valid.</string>
+
+    <!-- Permissions -->
+    <string name="permission_storage_title">Storage access needed</string>
+    <string name="permission_storage_message">This app needs access to all files to read your game file and keys. Tap Grant to open the permission screen.</string>
+    <string name="permission_required_title">Permission required</string>
+    <string name="permission_required_message">Storage access is required to read your game file and keys. Please re-launch the app and grant the permission.</string>
+    <string name="grant">Grant</string>
+    <string name="cancel">Cancel</string>
+</resources>

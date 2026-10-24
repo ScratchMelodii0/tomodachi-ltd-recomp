@@ -1,0 +1,102 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
+
+android {
+    namespace 'com.tomodachi.recomp'
+    compileSdk 34
+    // NDK r26c — last stable release with full ARM64 clang 17 toolchain.
+    // Install via Android Studio SDK Manager or:
+    //   sdkmanager "ndk;26.3.11579264"
+    ndkVersion '26.3.11579264'
+
+    defaultConfig {
+        applicationId 'com.tomodachi.recomp'
+        minSdk 29            // Android 10 — Vulkan 1.1 baseline, AAudio stable
+        targetSdk 34
+        versionCode 1
+        versionName '0.1.0-experimental'
+
+        // Only ARM64 — the recompiled game modules are AArch64 objects.
+        ndk {
+            abiFilters 'arm64-v8a'
+        }
+
+        externalNativeBuild {
+            cmake {
+                cppFlags '-std=c++20'
+                arguments(
+                    '-DANDROID_STL=c++_shared',
+                    '-DANDROID_PLATFORM=android-29',
+                    // Disable Qt (replaced by Android native UI / GameActivity).
+                    '-DENABLE_QT=OFF',
+                    '-DYUZU_USE_BUNDLED_QT=OFF',
+                    // Disable modules not usable on Android.
+                    '-DYUZU_TESTS=OFF',
+                    '-DENABLE_WEB_SERVICE=OFF',
+                    '-DYUZU_ROOM=OFF',
+                    '-DYUZU_ROOM_STANDALONE=OFF',
+                    '-DENABLE_QT_TRANSLATION=OFF',
+                    '-DUSE_DISCORD_PRESENCE=OFF',
+                    '-Dfmt_FORCE_BUNDLED=ON',
+                    // No JIT on Android (W^X restrictions); pure static recomp path.
+                    '-DSUYU_NO_JIT=ON',
+                    '-DSUYU_RECOMP_HYBRID=OFF',
+                    // Android-specific platform flag consumed by our adapter layer.
+                    '-DTOMODACHI_ANDROID=ON',
+                )
+            }
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path 'src/main/cpp/CMakeLists.txt'
+            version '3.22.1'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false   // keep symbols for crash reporting during experimental phase
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            jniDebuggable true
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+
+    // The recompiled game data (romfs assets) and the prod.keys-derived per-user data are never
+    // bundled into the APK; they are placed on device storage at first launch via the setup flow.
+    // Only the native .so libraries travel in the APK.
+    sourceSets {
+        main {
+            jniLibs.srcDirs = ['src/main/jniLibs']
+        }
+    }
+
+    packagingOptions {
+        // Keep all .so files; do not compress them so the OS can map them directly.
+        jniLibs {
+            useLegacyPackaging = false
+        }
+    }
+}
+
+dependencies {
+    // AndroidX GameActivity (replaces NativeActivity; supports multiple simultaneous touch pointers
+    // and delivers lifecycle events to the native layer via C callbacks).
+    implementation 'androidx.games:games-activity:3.0.5'
+    implementation 'androidx.core:core-ktx:1.12.0'
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.11.0'
+}

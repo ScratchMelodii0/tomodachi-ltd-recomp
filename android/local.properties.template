@@ -1,0 +1,10 @@
+# Copy this file to local.properties and fill in the paths.
+# local.properties is NOT committed to version control.
+
+# Path to the Android SDK root.
+sdk.dir=/home/YOUR_USER/Android/Sdk
+
+# Path to the Android NDK (r26.3.11579264 or later).
+# If sdk.dir is set and the NDK is installed via SDK Manager, Android Studio
+# fills this in automatically.  Set it manually for CLI builds.
+# ndk.dir=/home/YOUR_USER/Android/Sdk/ndk/26.3.11579264
